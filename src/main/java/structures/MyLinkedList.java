@@ -1,5 +1,7 @@
 package structures;
 
+import metrics.Metrics;
+
 public class MyLinkedList {
 
     private static class Node {
@@ -12,10 +14,14 @@ public class MyLinkedList {
     }
 
     private Node head;
+    private Node tail;
     private int size;
+
+    private final Metrics metrics = new Metrics();
 
     public MyLinkedList() {
         head = null;
+        tail = null;
         size = 0;
     }
 
@@ -23,19 +29,28 @@ public class MyLinkedList {
         return size;
     }
 
+    public Metrics getMetrics() {
+        return metrics;
+    }
+
+    public void resetMetrics() {
+        metrics.reset();
+    }
+
     public void add(int x) {
         Node newNode = new Node(x);
 
         if (head == null) {
             head = newNode;
+            tail = newNode;
+
+            metrics.addMoves(2);
         } else {
-            Node current = head;
+            tail.next = newNode;
+            metrics.addMove();
 
-            while (current.next != null) {
-                current = current.next;
-            }
-
-            current.next = newNode;
+            tail = newNode;
+            metrics.addMove();
         }
 
         size++;
@@ -46,20 +61,37 @@ public class MyLinkedList {
             throw new IndexOutOfBoundsException("Invalid index: " + index);
         }
 
+        if (index == size) {
+            add(x);
+            return;
+        }
+
         Node newNode = new Node(x);
 
         if (index == 0) {
             newNode.next = head;
+            metrics.addMove();
+
             head = newNode;
+            metrics.addMove();
+
+            if (size == 0) {
+                tail = newNode;
+                metrics.addMove();
+            }
         } else {
             Node current = head;
 
             for (int i = 0; i < index - 1; i++) {
                 current = current.next;
+                metrics.addStep();
             }
 
             newNode.next = current.next;
+            metrics.addMove();
+
             current.next = newNode;
+            metrics.addMove();
         }
 
         size++;
@@ -71,20 +103,43 @@ public class MyLinkedList {
         int removedValue;
 
         if (index == 0) {
-            removedValue = head.value;
-            head = head.next;
-        } else {
-            Node current = head;
+            metrics.addStep();
 
-            for (int i = 0; i < index - 1; i++) {
-                current = current.next;
+            removedValue = head.value;
+
+            head = head.next;
+            metrics.addMove();
+
+            size--;
+
+            if (size == 0) {
+                tail = null;
+                metrics.addMove();
             }
 
-            removedValue = current.next.value;
-            current.next = current.next.next;
+            return removedValue;
         }
 
+        Node current = head;
+
+        for (int i = 0; i < index - 1; i++) {
+            current = current.next;
+            metrics.addStep();
+        }
+
+        metrics.addStep();
+        removedValue = current.next.value;
+
+        if (current.next == tail) {
+            tail = current;
+            metrics.addMove();
+        }
+
+        current.next = current.next.next;
+        metrics.addMove();
+
         size--;
+
         return removedValue;
     }
 
@@ -95,7 +150,10 @@ public class MyLinkedList {
 
         for (int i = 0; i < index; i++) {
             current = current.next;
+            metrics.addStep();
         }
+
+        metrics.addStep();
 
         return current.value;
     }
@@ -104,6 +162,9 @@ public class MyLinkedList {
         Node current = head;
 
         while (current != null) {
+            metrics.addStep();
+            metrics.addComparison();
+
             if (current.value == x) {
                 return true;
             }
